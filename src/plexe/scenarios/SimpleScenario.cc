@@ -30,10 +30,11 @@ void SimpleScenario::initialize(int stage)
 {
 
     BaseScenario::initialize(stage);
+    startWarningFollowers = new cMessage("startWarningFollowers");
 
     if (stage == 0)
         // get pointer to application
-        appl = FindModule<BaseApp*>::findSubModule(getParentModule());
+        appl = FindModule<SimplePlatooningApp*>::findSubModule(getParentModule());
 
     if (stage == 2) {
         // average speed
@@ -42,12 +43,23 @@ void SimpleScenario::initialize(int stage)
         if (positionHelper->isLeader()) {
             // set base cruising speed
             plexeTraciVehicle->setCruiseControlDesiredSpeed(positionHelper->getPlatoonSpeed());
+
+            // Only the leader should start the protocol, initially it just warn his followers
+            scheduleAt(par("whenToWarnFollowers").doubleValue(), startWarningFollowers);
         }
         else {
             // let the follower set a higher desired speed to stay connected
             // to the leader when it is accelerating
             plexeTraciVehicle->setCruiseControlDesiredSpeed(leaderSpeed + 10);
         }
+    }
+}
+
+void SimpleScenario::handleMessage(cMessage* msg)
+{
+    if (msg == startWarningFollowers) {
+        // it's time to send warning!
+        appl->sendWarning();
     }
 }
 

@@ -24,4 +24,12 @@ namespace plexe {
 
 Define_Module(SimplePlatooningApp);
 
+void SimplePlatooningApp::sendWarning()
+{
+    getSimulation()->getActiveEnvir()->alert("DAJE che siamo a meta progetto");
+    // mandare un messaggio a tutti
+
+}
+
+
 } // namespace plexe

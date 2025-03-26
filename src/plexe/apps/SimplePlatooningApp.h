@@ -31,6 +31,7 @@ public:
     SimplePlatooningApp()
     {
     }
+    virtual void sendWarning();
 };
 
 } // namespace plexe

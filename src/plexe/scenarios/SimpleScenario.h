@@ -22,19 +22,22 @@
 #define SIMPLESCENARIO_H_
 
 #include "plexe/scenarios/BaseScenario.h"
-#include "plexe/apps/BaseApp.h"
+#include "plexe/apps/SimplePlatooningApp.h"
 
 namespace plexe {
 
 class SimpleScenario : public BaseScenario {
 public:
     virtual void initialize(int stage);
+    virtual void handleMessage(cMessage* msg) override;
 
 protected:
     // leader average speed
     double leaderSpeed;
     // application layer, used to stop the simulation
-    BaseApp* appl;
+    SimplePlatooningApp* appl;
+
+    cMessage* startWarningFollowers;
 
 public:
     SimpleScenario()

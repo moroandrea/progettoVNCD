@@ -27,5 +27,7 @@ simple SimpleScenario extends BBaseScenario
     parameters:
         @display("i=block/app2");
         @class(plexe::SimpleScenario);
+        
+        double whenToWarnFollowers @unit("s") = default(10s);
 
 }

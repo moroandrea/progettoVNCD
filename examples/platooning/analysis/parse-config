@@ -20,6 +20,7 @@ map    = %(defaultMap)s
 mapFile = %(file)s
 prefix = plt
 merge = 1
+type = csv
 
 [config]
 config = Braking
