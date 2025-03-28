@@ -28,8 +28,11 @@ namespace plexe {
 
 class SimpleScenario : public BaseScenario {
 public:
-    virtual void initialize(int stage);
+    virtual void initialize(int stage) override;
     virtual void handleMessage(cMessage* msg) override;
+    SimpleScenario()
+            : leaderSpeed(0)
+            , appl(nullptr){};
 
 protected:
     // leader average speed
@@ -37,12 +40,8 @@ protected:
     // application layer, used to stop the simulation
     SimplePlatooningApp* appl;
 
+private:
     cMessage* startWarningFollowers;
-
-public:
-    SimpleScenario()
-        : leaderSpeed(0)
-        , appl(nullptr){};
 };
 
 } // namespace plexe

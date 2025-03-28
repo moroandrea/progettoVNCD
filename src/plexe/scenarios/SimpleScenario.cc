@@ -30,7 +30,6 @@ void SimpleScenario::initialize(int stage)
 {
 
     BaseScenario::initialize(stage);
-    startWarningFollowers = new cMessage("startWarningFollowers");
 
     if (stage == 0)
         // get pointer to application
@@ -45,7 +44,10 @@ void SimpleScenario::initialize(int stage)
             plexeTraciVehicle->setCruiseControlDesiredSpeed(positionHelper->getPlatoonSpeed());
 
             // Only the leader should start the protocol, initially it just warn his followers
-            scheduleAt(par("whenToWarnFollowers").doubleValue(), startWarningFollowers);
+            startWarningFollowers = new cMessage("startWarningFollowers");
+
+            double time = par("whenToWarnFollowers").doubleValue();
+            scheduleAt(time, startWarningFollowers);
         }
         else {
             // let the follower set a higher desired speed to stay connected
@@ -59,7 +61,7 @@ void SimpleScenario::handleMessage(cMessage* msg)
 {
     if (msg == startWarningFollowers) {
         // it's time to send warning!
-        appl->sendWarning();
+        appl->sendLeaderAbandonIntention();
     }
 }
 

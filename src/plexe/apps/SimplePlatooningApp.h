@@ -23,15 +23,84 @@
 
 #include "plexe/apps/BaseApp.h"
 
+#include "plexe/messages/LeaderAbandonIntention_m.h"
+#include "plexe/messages/ReadyToBecomeLeader_m.h"
+#include "plexe/messages/UpdateFormation_m.h"
+
+#include "plexe/scenarios/BaseScenario.h"
+
 namespace plexe {
+
+enum class PlatoonRole : size_t {
+    NONE, ///< The vehicle is not in a Platoon
+    LEADER, ///< The vehicle is the leader of its Platoon
+    FOLLOWER, ///< The vehicle is a normal follower in its Platoon
+    JOINER ///< The vehicle is in the process of joining a Platoon
+};
 
 class SimplePlatooningApp : public BaseApp {
 
 public:
     SimplePlatooningApp()
+    : scenario(nullptr)
+    , role(PlatoonRole::NONE)
     {
     }
+
+    void sendLeaderAbandonIntention();
+    virtual void sendUnicast(cPacket* msg, int destination);
+
+
+    /**
+     * Returns the role of this car in the platoon
+     *
+     * @return PlatoonRole the role in the platoon
+     * @see PlatoonRole
+     */
+    const PlatoonRole& getPlatoonRole() const
+    {
+        return role;
+    }
+
+    /**
+     * Sets the role of this car in the platoon
+     *
+     * @param PlatoonRole r the role in the platoon
+     * @see PlatoonRole
+     */
+    void setPlatoonRole(PlatoonRole r);
+
     virtual void sendWarning();
+
+protected:
+    virtual void initialize(int stage) override;
+    virtual void handleLowerMsg(cMessage* msg) override;
+
+    BaseScenario* scenario;
+
+private:
+    LeaderAbandonIntention* createLeaderAbandonIntentionMsg();
+    ReadyToBecomeLeader* createReadyToBecomeLeaderMsg();
+    UpdateFormation* createUpdateFormationMsg(const std::vector<int>& formation);
+
+    void handleLeaderAbandonIntention(const LeaderAbandonIntention* msg);
+    void handleReadyToBecomeLeader(const ReadyToBecomeLeader* msg);
+    void handleUpdateFormation(const UpdateFormation* msg);
+
+    /**
+     * Sends a platoon leader election proposal to the current
+     * platoon leader.
+     */
+    void sendLeaderIntentionToLeader();
+
+    /**
+     * Sends the updated platoon formation to all other platoon
+     * members.
+     */
+    void broadcastFormationUpdate(std::vector<int>& formation);
+
+    /** the role of this vehicle */
+    PlatoonRole role;
 };
 
 } // namespace plexe

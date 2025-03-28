@@ -24,12 +24,70 @@ namespace plexe {
 
 Define_Module(SimplePlatooningApp);
 
-void SimplePlatooningApp::sendWarning()
+void SimplePlatooningApp::initialize(int stage)
 {
-    getSimulation()->getActiveEnvir()->alert("DAJE che siamo a meta progetto");
-    // mandare un messaggio a tutti
 
 }
 
+void SimplePlatooningApp::handleLowerMsg(cMessage* msg)
+{
+
+}
+
+void SimplePlatooningApp::sendUnicast(cPacket* msg, int destination)
+{
+
+}
+
+void SimplePlatooningApp::sendLeaderAbandonIntention()
+{
+    getSimulation()->getActiveEnvir()->alert("DAJE che siamo a meta progetto");
+    // mandare un messaggio a tutti
+}
+
+void SimplePlatooningApp::sendLeaderIntentionToLeader()
+{
+
+}
+
+void SimplePlatooningApp::broadcastFormationUpdate(std::vector<int>& formation)
+{
+
+}
+
+void SimplePlatooningApp::handleLeaderAbandonIntention(const LeaderAbandonIntention* msg)
+{
+
+}
+
+void SimplePlatooningApp::handleReadyToBecomeLeader(const ReadyToBecomeLeader* msg)
+{
+
+}
+
+void SimplePlatooningApp::handleUpdateFormation(const UpdateFormation* msg)
+{
+
+}
+
+LeaderAbandonIntention* SimplePlatooningApp::createLeaderAbandonIntentionMsg()
+{
+
+}
+
+ReadyToBecomeLeader* SimplePlatooningApp::createReadyToBecomeLeaderMsg()
+{
+
+}
+
+UpdateFormation* SimplePlatooningApp::createUpdateFormationMsg(const std::vector<int>& formation)
+{
+
+}
+
+void SimplePlatooningApp::setPlatoonRole(PlatoonRole r)
+{
+    role = r;
+}
 
 } // namespace plexe
