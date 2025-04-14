@@ -50,6 +50,15 @@ public:
     void sendLeaderAbandonIntention();
     virtual void sendUnicast(cPacket* msg, int destination);
 
+    /**
+     * Fills members of a ManeuverMessage
+     *
+     * @param msg ManeuverMessage the message to be filled
+     * @param int vehicleId the id of the sending vehicle
+     * @param int platoonId the id of the platoon of the sending vehicle
+     * @param int destinationId the id of the destination
+     */
+    void fillManeuverMessage(ManeuverMessage* msg, int vehicleId, std::string externalId, int platoonId, int destinationId);
 
     /**
      * Returns the role of this car in the platoon
@@ -70,8 +79,6 @@ public:
      */
     void setPlatoonRole(PlatoonRole r);
 
-    virtual void sendWarning();
-
 protected:
     virtual void initialize(int stage) override;
     virtual void handleLowerMsg(cMessage* msg) override;
@@ -79,7 +86,7 @@ protected:
     BaseScenario* scenario;
 
 private:
-    LeaderAbandonIntention* createLeaderAbandonIntentionMsg();
+    LeaderAbandonIntention* createLeaderAbandonIntentionMsg(int destinationId);
     ReadyToBecomeLeader* createReadyToBecomeLeaderMsg();
     UpdateFormation* createUpdateFormationMsg(const std::vector<int>& formation);
 
