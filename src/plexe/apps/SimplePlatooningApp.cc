@@ -20,8 +20,9 @@
 
 #include "plexe/apps/SimplePlatooningApp.h"
 #include "plexe/messages/PlexeInterfaceControlInfo_m.h"
-#include "veins/modules/messages/BaseFrame1609_4_m.h"
 #include "plexe/protocols/BaseProtocol.h"
+#include "veins/modules/messages/BaseFrame1609_4_m.h"
+#include "veins/modules/mac/ieee80211p/Mac1609_4.h"
 #include "veins/modules/utility/Consts80211p.h"
 
 using namespace veins;
@@ -32,12 +33,18 @@ Define_Module(SimplePlatooningApp);
 
 void SimplePlatooningApp::initialize(int stage)
 {
+    BaseApp::initialize(stage);
+
     if (stage == 1) {
         // connect maneuver application to protocol
-        protocol->registerApplication(MANEUVER_TYPE, gate("lowerLayerIn"), gate("lowerLayerOut"), gate("lowerControlIn"), gate("lowerControlOut"));
+        protocol->registerApplication(
+            MANEUVER_TYPE,
+            gate("lowerLayerIn"), gate("lowerLayerOut"),
+            gate("lowerControlIn"), gate("lowerControlOut")
+        );
+        // register to the signal indicating failed unicast transmissions
+        findHost()->subscribe(Mac1609_4::sigRetriesExceeded, this);
     }
-
-
 }
 
 void SimplePlatooningApp::handleLowerMsg(cMessage* msg)
@@ -73,10 +80,13 @@ void SimplePlatooningApp::sendUnicast(cPacket* msg, int destination)
 {
     Enter_Method_Silent();
     take(msg);
+
+    // Initialize base frame
     BaseFrame1609_4* frame = new BaseFrame1609_4("BaseFrame1609_4", msg->getKind());
     frame->setRecipientAddress(destination);
     frame->setChannelNumber(static_cast<int>(Channel::cch));
     frame->encapsulate(msg);
+
     // send unicast frames using 11p only
     PlexeInterfaceControlInfo* ctrl = new PlexeInterfaceControlInfo();
     ctrl->setInterfaces(PlexeRadioInterfaces::VEINS_11P);
@@ -86,23 +96,34 @@ void SimplePlatooningApp::sendUnicast(cPacket* msg, int destination)
 
 void SimplePlatooningApp::sendLeaderAbandonIntention()
 {
+    LeaderAbandonIntention* msg = createLeaderAbandonIntentionMsg();
 
     for (unsigned int i = 1; i < positionHelper->getPlatoonSize(); i++) {
         int dest = positionHelper->getMemberId(i);
-        LeaderAbandonIntention* copymsg = createLeaderAbandonIntentionMsg(dest);
-        copymsg->setDestinationId(dest);
-        sendUnicast(copymsg, dest);
+        LeaderAbandonIntention* dup = msg->dup();
+        dup->setDestinationId(dest);
+        sendUnicast(dup, dest);
     }
 }
 
 void SimplePlatooningApp::sendLeaderIntentionToLeader()
 {
-
+    ReadyToBecomeLeader* msg = createReadyToBecomeLeaderMsg();
+    int dest = positionHelper->getLeaderId();
+    msg->setDestinationId(dest);
+    sendUnicast(msg, dest);
 }
 
 void SimplePlatooningApp::broadcastFormationUpdate(std::vector<int>& formation)
 {
+    UpdatePlatoonFormation* msg = createUpdateFormationMsg(formation);
 
+    for (unsigned int i = 1; i < formation.size(); i++) {
+        int dest = formation[i];
+        UpdatePlatoonFormation* dup = msg->dup();
+        dup->setDestinationId(dest);
+        sendUnicast(dup, dest);
+    }
 }
 
 void SimplePlatooningApp::handleLeaderAbandonIntention(const LeaderAbandonIntention* msg)
@@ -115,35 +136,47 @@ void SimplePlatooningApp::handleReadyToBecomeLeader(const ReadyToBecomeLeader* m
 
 }
 
-void SimplePlatooningApp::handleUpdateFormation(const UpdateFormation* msg)
+void SimplePlatooningApp::handleUpdateFormation(const UpdatePlatoonFormation* msg)
 {
 
 }
 
-void SimplePlatooningApp::fillManeuverMessage(ManeuverMessage* msg, int vehicleId, std::string externalId, int platoonId, int destinationId)
+void SimplePlatooningApp::fillManeuverMessage(ManeuverMessage* msg, int vehicleId, std::string externalId, int platoonId)
 {
     msg->setKind(MANEUVER_TYPE);
     msg->setVehicleId(vehicleId);
     msg->setExternalId(externalId.c_str());
     msg->setPlatoonId(platoonId);
-    msg->setDestinationId(destinationId);
 }
 
-LeaderAbandonIntention* SimplePlatooningApp::createLeaderAbandonIntentionMsg(int destinationId)
+LeaderAbandonIntention* SimplePlatooningApp::createLeaderAbandonIntentionMsg()
 {
     LeaderAbandonIntention* msg = new LeaderAbandonIntention("LeaderAbandonIntention");
-    fillManeuverMessage(msg, positionHelper->getId(), positionHelper->getExternalId(), positionHelper->getPlatoonId(), destinationId);
+    fillManeuverMessage(msg, positionHelper->getId(), positionHelper->getExternalId(), positionHelper->getPlatoonId());
     return msg;
 }
 
 ReadyToBecomeLeader* SimplePlatooningApp::createReadyToBecomeLeaderMsg()
 {
-    return nullptr;
+    ReadyToBecomeLeader* msg = new ReadyToBecomeLeader("ReadyToBecomeLeader");
+    fillManeuverMessage(msg, positionHelper->getId(), positionHelper->getExternalId(), positionHelper->getPlatoonId());
+    return msg;
 }
 
-UpdateFormation* SimplePlatooningApp::createUpdateFormationMsg(const std::vector<int>& formation)
+UpdatePlatoonFormation* SimplePlatooningApp::createUpdateFormationMsg(const std::vector<int>& formation)
 {
-    return nullptr;
+    UpdatePlatoonFormation* msg = new UpdatePlatoonFormation("UpdatePlatoonFormation");
+    fillManeuverMessage(msg, positionHelper->getId(), positionHelper->getExternalId(), positionHelper->getPlatoonId());
+
+    msg->setPlatoonSpeed(positionHelper->getPlatoonSpeed());
+    msg->setPlatoonLane(positionHelper->getPlatoonLane());
+
+    msg->setPlatoonFormationArraySize(formation.size());
+    for (unsigned int i = 0; i < formation.size(); i++) {
+        msg->setPlatoonFormation(i, formation[i]);
+    }
+
+    return msg;
 }
 
 void SimplePlatooningApp::setPlatoonRole(PlatoonRole r)

@@ -25,7 +25,7 @@
 
 #include "plexe/messages/LeaderAbandonIntention_m.h"
 #include "plexe/messages/ReadyToBecomeLeader_m.h"
-#include "plexe/messages/UpdateFormation_m.h"
+#include "plexe/messages/UpdatePlatoonFormation_m.h"
 
 #include "plexe/scenarios/BaseScenario.h"
 
@@ -47,18 +47,12 @@ public:
     {
     }
 
-    void sendLeaderAbandonIntention();
-    virtual void sendUnicast(cPacket* msg, int destination);
-
     /**
-     * Fills members of a ManeuverMessage
-     *
-     * @param msg ManeuverMessage the message to be filled
-     * @param int vehicleId the id of the sending vehicle
-     * @param int platoonId the id of the platoon of the sending vehicle
-     * @param int destinationId the id of the destination
+     * Sends the intention to abandon the platoon.
      */
-    void fillManeuverMessage(ManeuverMessage* msg, int vehicleId, std::string externalId, int platoonId, int destinationId);
+    void sendLeaderAbandonIntention();
+
+    virtual void sendUnicast(cPacket* msg, int destination);
 
     /**
      * Returns the role of this car in the platoon
@@ -86,13 +80,53 @@ protected:
     BaseScenario* scenario;
 
 private:
-    LeaderAbandonIntention* createLeaderAbandonIntentionMsg(int destinationId);
-    ReadyToBecomeLeader* createReadyToBecomeLeaderMsg();
-    UpdateFormation* createUpdateFormationMsg(const std::vector<int>& formation);
+    /**
+     * Creates a LeadearAbandonIntention message.
+     */
+    LeaderAbandonIntention* createLeaderAbandonIntentionMsg();
 
+    /**
+     * Creates a ReadyToBecomeLeader message.
+     */
+    ReadyToBecomeLeader* createReadyToBecomeLeaderMsg();
+
+    /**
+     * Creates a UpdatePlatoonFormation message, using the specified platoon formation.
+     *
+     * @param std::vector<int> formation The platoon formation.
+     */
+    UpdatePlatoonFormation* createUpdateFormationMsg(const std::vector<int>& formation);
+
+    /**
+     * Handles the reception of a LeaderAbandonIntention message.
+     *
+     * @param LeaderAbandonIntention msg The leader abandon intention message.
+     */
     void handleLeaderAbandonIntention(const LeaderAbandonIntention* msg);
+
+    /**
+     * Handles the reception of a ReadyToBecomeLeader message.
+     *
+     * @param ReadyToBecomeLeader msg The ready-to-become leader message.
+     */
     void handleReadyToBecomeLeader(const ReadyToBecomeLeader* msg);
-    void handleUpdateFormation(const UpdateFormation* msg);
+
+    /**
+     * Handles the reception of a UpdatePlatoonFormation message.
+     *
+     * @param UpdatePlatoonFormation msg The updated platoon formation message.
+     */
+    void handleUpdateFormation(const UpdatePlatoonFormation* msg);
+
+    /**
+     * Fills the ManeuverMessage with all the basic information.
+     *
+     * @param msg ManeuverMessage The message to be filled
+     * @param int vehicleId The id of the sending vehicle
+     * @param int platoonId The id of the platoon of the sending vehicle
+     * @param int destinationId The id of the destination
+     */
+    void fillManeuverMessage(ManeuverMessage* msg, int vehicleId, std::string externalId, int platoonId);
 
     /**
      * Sends a platoon leader election proposal to the current
@@ -103,6 +137,8 @@ private:
     /**
      * Sends the updated platoon formation to all other platoon
      * members.
+     *
+     * @param std::vector<int> formation The platoon formation.
      */
     void broadcastFormationUpdate(std::vector<int>& formation);
 
