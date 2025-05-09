@@ -24,6 +24,7 @@
 #include "plexe/apps/BaseApp.h"
 
 #include "plexe/messages/LeaderAbandonIntention_m.h"
+#include "plexe/messages/LeaderAbandonIntentionAck_m.h"
 #include "plexe/messages/ReadyToBecomeLeader_m.h"
 #include "plexe/messages/UpdatePlatoonFormation_m.h"
 
@@ -86,6 +87,11 @@ private:
     LeaderAbandonIntention* createLeaderAbandonIntentionMsg();
 
     /**
+     * Creates a LeadearAbandonIntentionAck message.
+     */
+    LeaderAbandonIntentionAck* createLeaderAbandonIntentionAckMsg();
+
+    /**
      * Creates a ReadyToBecomeLeader message.
      */
     ReadyToBecomeLeader* createReadyToBecomeLeaderMsg();
@@ -117,6 +123,8 @@ private:
      * @param UpdatePlatoonFormation msg The updated platoon formation message.
      */
     void handleUpdateFormation(const UpdatePlatoonFormation* msg);
+
+    void handleLeaderAbandonIntention(const LeaderAbandonIntentionAck* msg);
 
     /**
      * Fills the ManeuverMessage with all the basic information.

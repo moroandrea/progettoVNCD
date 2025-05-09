@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Delete 26 resources" deleteContents="false" description="Delete 26 resources" element1="/aloha" element10="/inet4.5" element11="/neddemo" element12="/openstreetmap" element13="/osg-earth" element14="/osg-indoor" element15="/osg-intro" element16="/osg-satellites" element17="/petrinets" element18="/queueinglib" element19="/queueinglibext" element2="/canvas" element20="/queuenet" element21="/resultfiles" element22="/routing" element23="/sockets" element24="/tictoc" element25="/wiredphy" element26="/wizards" element3="/cqn" element4="/dyna" element5="/embedding" element6="/embedding2" element7="/fifo" element8="/histograms" element9="/hypercube" flags="7" id="org.eclipse.ltk.core.refactoring.delete.resources" resources="26" stamp="1746717526075"/>
+</session>

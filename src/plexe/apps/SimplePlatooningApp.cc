@@ -62,13 +62,24 @@ void SimplePlatooningApp::handleLowerMsg(cMessage* msg)
             delete msg;
             endSimulation();
         }
-//        else if (UpdatePlatoonFormation* msg = dynamic_cast<UpdatePlatoonFormation*>(mm)) {
-//            handleUpdatePlatoonFormation(msg);
-//            delete msg;
-//        }
-//        else {
-//            onManeuverMessage(mm);
-//        }
+        else if (UpdatePlatoonFormation* msg = dynamic_cast<UpdatePlatoonFormation*>(mm)) {
+            //handleUpdatePlatoonFormation(msg);
+            getSimulation()->getActiveEnvir()->alert("E' arrivat un leaderAbandonMessage!!!");
+            delete msg;
+            endSimulation();
+        }
+        else if (ReadyToBecomeLeader* msg = dynamic_cast<UpdatePlatoonFormation*>(mm)) {
+            //handleReadyToBecomeLeader(msg);
+            getSimulation()->getActiveEnvir()->alert("E' arrivat un leaderAbandonMessage!!!");
+            delete msg;
+            endSimulation();
+        }
+        else if (LeaderAbandonIntentionAck* msg = dynamic_cast<LeaderAbandonIntentionAck*>(mm)) {
+//            handleLeaveAbandonIntention(msg);
+            getSimulation()->getActiveEnvir()->alert("E' arrivato un ack!!!");
+            delete msg;
+        }
+
         delete frame;
     }
     else {
@@ -141,6 +152,11 @@ void SimplePlatooningApp::handleUpdateFormation(const UpdatePlatoonFormation* ms
 
 }
 
+void SimplePlatooningApp::handleLeaderAbandonIntention(const LeaderAbandonIntentionAck* msg)
+{
+
+}
+
 void SimplePlatooningApp::fillManeuverMessage(ManeuverMessage* msg, int vehicleId, std::string externalId, int platoonId)
 {
     msg->setKind(MANEUVER_TYPE);
@@ -152,6 +168,13 @@ void SimplePlatooningApp::fillManeuverMessage(ManeuverMessage* msg, int vehicleI
 LeaderAbandonIntention* SimplePlatooningApp::createLeaderAbandonIntentionMsg()
 {
     LeaderAbandonIntention* msg = new LeaderAbandonIntention("LeaderAbandonIntention");
+    fillManeuverMessage(msg, positionHelper->getId(), positionHelper->getExternalId(), positionHelper->getPlatoonId());
+    return msg;
+}
+
+LeaderAbandonIntentionAck* SimplePlatooningApp::createLeaderAbandonIntentionAckMsg()
+{
+    LeaderAbandonIntentionAck* msg = new LeaderAbandonIntentionAck("LeaderAbandonIntentionAck");
     fillManeuverMessage(msg, positionHelper->getId(), positionHelper->getExternalId(), positionHelper->getPlatoonId());
     return msg;
 }
