@@ -58,28 +58,29 @@ void SimplePlatooningApp::handleLowerMsg(cMessage* msg)
         ManeuverMessage* mm = check_and_cast<ManeuverMessage*>(frame->decapsulate());
         if (LeaderAbandonIntention* msg = dynamic_cast<LeaderAbandonIntention*>(mm)) {
             //handleUpdatePlatoonData(msg);
-            getSimulation()->getActiveEnvir()->alert("E' arrivat un leaderAbandonMessage!!!");
+            getSimulation()->getActiveEnvir()->alert("E' arrivato un LeaderAbandonMessage!!!");
             delete msg;
-            endSimulation();
+        }
+        else if (LeaderAvailabilityRequest* msg = dynamic_cast<LeaderAvailabilityRequest*>(mm)) {
+                    //handleLeaderAvailabilityRequest(msg);
+                    getSimulation()->getActiveEnvir()->alert("E' arrivato un LeaderAvailabilityRequest!!!");
+                    delete msg;
+        }
+        else if (LeaderAvailabilityResponse* msg = dynamic_cast<LeaderAvailabilityResponse*>(mm)) {
+                    //handleLeaderAvailabilityResponse(msg);
+                    getSimulation()->getActiveEnvir()->alert("E' arrivato un LeaderAvailabilityResponse!!!");
+                    delete msg;
+        }
+        else if (ReadyToBecomeLeader* msg = dynamic_cast<ReadyToBecomeLeader*>(mm)) {
+                    //handleReadyToBecomeLeader(msg);
+                    getSimulation()->getActiveEnvir()->alert("E' arrivato un leaderAbandonMessage!!!");
+                    delete msg;
         }
         else if (UpdatePlatoonFormation* msg = dynamic_cast<UpdatePlatoonFormation*>(mm)) {
             //handleUpdatePlatoonFormation(msg);
-            getSimulation()->getActiveEnvir()->alert("E' arrivat un leaderAbandonMessage!!!");
-            delete msg;
-            endSimulation();
-        }
-        else if (ReadyToBecomeLeader* msg = dynamic_cast<UpdatePlatoonFormation*>(mm)) {
-            //handleReadyToBecomeLeader(msg);
-            getSimulation()->getActiveEnvir()->alert("E' arrivat un leaderAbandonMessage!!!");
-            delete msg;
-            endSimulation();
-        }
-        else if (LeaderAbandonIntentionAck* msg = dynamic_cast<LeaderAbandonIntentionAck*>(mm)) {
-//            handleLeaveAbandonIntention(msg);
-            getSimulation()->getActiveEnvir()->alert("E' arrivato un ack!!!");
+            getSimulation()->getActiveEnvir()->alert("E' arrivato un leaderAbandonMessage!!!");
             delete msg;
         }
-
         delete frame;
     }
     else {
@@ -105,6 +106,22 @@ void SimplePlatooningApp::sendUnicast(cPacket* msg, int destination)
     sendDown(frame);
 }
 
+void SimplePlatooningApp::sendLeaderAvailabilityRequest()
+{
+    LeaderAvailabilityRequest* msg = createLeaderAvailabilityRequestMsg();
+    int dest = positionHelper->getMemberId(1);
+    msg->setDestinationId(dest);
+    sendUnicast(msg, dest);
+}
+
+void SimplePlatooningApp::sendLeaderAvailabilityResponse()
+{
+    LeaderAvailabilityResponse* msg = createLeaderAvailabilityResponseMsg();
+    int dest = positionHelper->getLeaderId();
+    msg->setDestinationId(dest);
+    sendUnicast(msg, dest);
+}
+
 void SimplePlatooningApp::sendLeaderAbandonIntention()
 {
     LeaderAbandonIntention* msg = createLeaderAbandonIntentionMsg();
@@ -117,7 +134,7 @@ void SimplePlatooningApp::sendLeaderAbandonIntention()
     }
 }
 
-void SimplePlatooningApp::sendLeaderIntentionToLeader()
+void SimplePlatooningApp::sendReadyToBecomeLeader()
 {
     ReadyToBecomeLeader* msg = createReadyToBecomeLeaderMsg();
     int dest = positionHelper->getLeaderId();
@@ -125,7 +142,7 @@ void SimplePlatooningApp::sendLeaderIntentionToLeader()
     sendUnicast(msg, dest);
 }
 
-void SimplePlatooningApp::broadcastFormationUpdate(std::vector<int>& formation)
+void SimplePlatooningApp::broadcastUpdateFormation(std::vector<int>& formation)
 {
     UpdatePlatoonFormation* msg = createUpdateFormationMsg(formation);
 
@@ -135,6 +152,16 @@ void SimplePlatooningApp::broadcastFormationUpdate(std::vector<int>& formation)
         dup->setDestinationId(dest);
         sendUnicast(dup, dest);
     }
+}
+
+void SimplePlatooningApp::handleLeaderAvailabilityRequest(const LeaderAvailabilityRequest* msg)
+{
+
+}
+
+void SimplePlatooningApp::handleLeaderAvailabilityResponse(const LeaderAvailabilityResponse* msg)
+{
+
 }
 
 void SimplePlatooningApp::handleLeaderAbandonIntention(const LeaderAbandonIntention* msg)
@@ -152,11 +179,6 @@ void SimplePlatooningApp::handleUpdateFormation(const UpdatePlatoonFormation* ms
 
 }
 
-void SimplePlatooningApp::handleLeaderAbandonIntention(const LeaderAbandonIntentionAck* msg)
-{
-
-}
-
 void SimplePlatooningApp::fillManeuverMessage(ManeuverMessage* msg, int vehicleId, std::string externalId, int platoonId)
 {
     msg->setKind(MANEUVER_TYPE);
@@ -165,16 +187,23 @@ void SimplePlatooningApp::fillManeuverMessage(ManeuverMessage* msg, int vehicleI
     msg->setPlatoonId(platoonId);
 }
 
-LeaderAbandonIntention* SimplePlatooningApp::createLeaderAbandonIntentionMsg()
+LeaderAvailabilityRequest* SimplePlatooningApp::createLeaderAvailabilityRequestMsg()
 {
-    LeaderAbandonIntention* msg = new LeaderAbandonIntention("LeaderAbandonIntention");
+    LeaderAvailabilityRequest* msg = new LeaderAvailabilityRequest("LeaderAvailabilityRequest");
     fillManeuverMessage(msg, positionHelper->getId(), positionHelper->getExternalId(), positionHelper->getPlatoonId());
     return msg;
 }
 
-LeaderAbandonIntentionAck* SimplePlatooningApp::createLeaderAbandonIntentionAckMsg()
+LeaderAvailabilityResponse* SimplePlatooningApp::createLeaderAvailabilityResponseMsg()
 {
-    LeaderAbandonIntentionAck* msg = new LeaderAbandonIntentionAck("LeaderAbandonIntentionAck");
+    LeaderAvailabilityResponse* msg = new LeaderAvailabilityResponse("LeaderAvailabilityResponse");
+    fillManeuverMessage(msg, positionHelper->getId(), positionHelper->getExternalId(), positionHelper->getPlatoonId());
+    return msg;
+}
+
+LeaderAbandonIntention* SimplePlatooningApp::createLeaderAbandonIntentionMsg()
+{
+    LeaderAbandonIntention* msg = new LeaderAbandonIntention("LeaderAbandonIntention");
     fillManeuverMessage(msg, positionHelper->getId(), positionHelper->getExternalId(), positionHelper->getPlatoonId());
     return msg;
 }

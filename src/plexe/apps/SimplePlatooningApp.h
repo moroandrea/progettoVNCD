@@ -23,8 +23,9 @@
 
 #include "plexe/apps/BaseApp.h"
 
+#include "plexe/messages/LeaderAvailabilityRequest_m.h"
+#include "plexe/messages/LeaderAvailabilityResponse_m.h"
 #include "plexe/messages/LeaderAbandonIntention_m.h"
-#include "plexe/messages/LeaderAbandonIntentionAck_m.h"
 #include "plexe/messages/ReadyToBecomeLeader_m.h"
 #include "plexe/messages/UpdatePlatoonFormation_m.h"
 
@@ -81,15 +82,21 @@ protected:
     BaseScenario* scenario;
 
 private:
+
+    /**
+     * Creates a LeaderAvailabilityRequest message.
+     */
+    LeaderAvailabilityRequest* createLeaderAvailabilityRequestMsg();
+
+    /**
+     * Creates a LeaderAvailabilityResponse message.
+     */
+    LeaderAvailabilityResponse* createLeaderAvailabilityResponseMsg();
+
     /**
      * Creates a LeadearAbandonIntention message.
      */
     LeaderAbandonIntention* createLeaderAbandonIntentionMsg();
-
-    /**
-     * Creates a LeadearAbandonIntentionAck message.
-     */
-    LeaderAbandonIntentionAck* createLeaderAbandonIntentionAckMsg();
 
     /**
      * Creates a ReadyToBecomeLeader message.
@@ -102,6 +109,20 @@ private:
      * @param std::vector<int> formation The platoon formation.
      */
     UpdatePlatoonFormation* createUpdateFormationMsg(const std::vector<int>& formation);
+
+    /**
+     * Handles the reception of a LeaderAvailabilityRequest message.
+     *
+     * @param LeaderAvailabilityRequest msg The leader abandon intention message.
+     */
+    void handleLeaderAvailabilityRequest(const LeaderAvailabilityRequest* msg);
+
+    /**
+     * Handles the reception of a LeaderAvailabilityResponse message.
+     *
+     * @param LeaderAvailabilityResponse msg The leader abandon intention message.
+     */
+    void handleLeaderAvailabilityResponse(const LeaderAvailabilityResponse* msg);
 
     /**
      * Handles the reception of a LeaderAbandonIntention message.
@@ -124,8 +145,6 @@ private:
      */
     void handleUpdateFormation(const UpdatePlatoonFormation* msg);
 
-    void handleLeaderAbandonIntention(const LeaderAbandonIntentionAck* msg);
-
     /**
      * Fills the ManeuverMessage with all the basic information.
      *
@@ -140,7 +159,14 @@ private:
      * Sends a platoon leader election proposal to the current
      * platoon leader.
      */
-    void sendLeaderIntentionToLeader();
+
+    void sendLeaderAvailabilityRequest();
+
+    void sendLeaderAvailabilityResponse();
+
+    // void sendLeaderAbandonIntention(); perché questa va in public invece che in private assieme alle altre?
+
+    void sendReadyToBecomeLeader();
 
     /**
      * Sends the updated platoon formation to all other platoon
@@ -148,7 +174,7 @@ private:
      *
      * @param std::vector<int> formation The platoon formation.
      */
-    void broadcastFormationUpdate(std::vector<int>& formation);
+    void broadcastUpdateFormation(std::vector<int>& formation);
 
     /** the role of this vehicle */
     PlatoonRole role;
