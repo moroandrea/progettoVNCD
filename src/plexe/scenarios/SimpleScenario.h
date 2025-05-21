@@ -32,13 +32,13 @@ public:
     virtual void handleMessage(cMessage* msg) override;
     SimpleScenario()
             : leaderSpeed(0)
-            , appl(nullptr){};
+            , app(nullptr){};
 
 protected:
     // leader average speed
     double leaderSpeed;
     // application layer, used to stop the simulation
-    SimplePlatooningApp* appl;
+    SimplePlatooningApp* app;
 
 private:
     cMessage* startWarningFollowers;

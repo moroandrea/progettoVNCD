@@ -33,7 +33,7 @@ void SimpleScenario::initialize(int stage)
 
     if (stage == 0)
         // get pointer to application
-        appl = FindModule<SimplePlatooningApp*>::findSubModule(getParentModule());
+        app = FindModule<SimplePlatooningApp*>::findSubModule(getParentModule());
 
     if (stage == 2) {
         // average speed
@@ -60,8 +60,7 @@ void SimpleScenario::initialize(int stage)
 void SimpleScenario::handleMessage(cMessage* msg)
 {
     if (msg == startWarningFollowers) {
-        // it's time to send warning!
-        appl->sendLeaderAbandonIntention();
+        app->startLeaderReplacementManeuver();
     }
 }
 

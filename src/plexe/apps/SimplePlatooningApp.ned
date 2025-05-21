@@ -20,9 +20,9 @@
 
 package org.car2x.plexe.apps;
 
-import org.car2x.plexe.apps.BaseApp;
+import org.car2x.plexe.apps.BasePlatooningApp;
 
-simple SimplePlatooningApp like BaseApp
+simple SimplePlatooningApp like BasePlatooningApp
 {
     parameters:
         int headerLength @unit("bit") = default(0 bit);

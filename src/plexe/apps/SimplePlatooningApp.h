@@ -21,163 +21,38 @@
 #ifndef SIMPLEPLATOONINGAPP_H_
 #define SIMPLEPLATOONINGAPP_H_
 
-#include "plexe/apps/BaseApp.h"
+#include "plexe/apps/BasePlatooningApp.h"
 
-#include "plexe/messages/LeaderAvailabilityRequest_m.h"
-#include "plexe/messages/LeaderAvailabilityResponse_m.h"
-#include "plexe/messages/LeaderAbandonIntention_m.h"
-#include "plexe/messages/ReadyToBecomeLeader_m.h"
-#include "plexe/messages/UpdatePlatoonFormation_m.h"
-
-#include "plexe/scenarios/BaseScenario.h"
+#include "plexe/maneuver/LeaderReplacement.h"
 
 namespace plexe {
 
-enum class PlatoonRole : size_t {
-    NONE, ///< The vehicle is not in a Platoon
-    LEADER, ///< The vehicle is the leader of its Platoon
-    FOLLOWER, ///< The vehicle is a normal follower in its Platoon
-    JOINER ///< The vehicle is in the process of joining a Platoon
-};
-
-class SimplePlatooningApp : public BaseApp {
+class SimplePlatooningApp : public BasePlatooningApp {
 
 public:
     SimplePlatooningApp()
-    : scenario(nullptr)
-    , role(PlatoonRole::NONE)
+    : BasePlatooningApp()
     {
     }
 
-    /**
-     * Sends the intention to abandon the platoon.
-     */
-    void sendLeaderAbandonIntention();
+    virtual ~SimplePlatooningApp();
 
-    virtual void sendUnicast(cPacket* msg, int destination);
-
-    /**
-     * Returns the role of this car in the platoon
-     *
-     * @return PlatoonRole the role in the platoon
-     * @see PlatoonRole
-     */
-    const PlatoonRole& getPlatoonRole() const
-    {
-        return role;
-    }
-
-    /**
-     * Sets the role of this car in the platoon
-     *
-     * @param PlatoonRole r the role in the platoon
-     * @see PlatoonRole
-     */
-    void setPlatoonRole(PlatoonRole r);
+    virtual void startLeaderReplacementManeuver();
 
 protected:
     virtual void initialize(int stage) override;
+
     virtual void handleLowerMsg(cMessage* msg) override;
 
-    BaseScenario* scenario;
+    /**
+     * Handles maneuver messages.
+     *
+     * @param mm maneuver message to handle
+     */
+    virtual void onManeuverMessage(ManeuverMessage* mm) override;
 
 private:
-
-    /**
-     * Creates a LeaderAvailabilityRequest message.
-     */
-    LeaderAvailabilityRequest* createLeaderAvailabilityRequestMsg();
-
-    /**
-     * Creates a LeaderAvailabilityResponse message.
-     */
-    LeaderAvailabilityResponse* createLeaderAvailabilityResponseMsg();
-
-    /**
-     * Creates a LeadearAbandonIntention message.
-     */
-    LeaderAbandonIntention* createLeaderAbandonIntentionMsg();
-
-    /**
-     * Creates a ReadyToBecomeLeader message.
-     */
-    ReadyToBecomeLeader* createReadyToBecomeLeaderMsg();
-
-    /**
-     * Creates a UpdatePlatoonFormation message, using the specified platoon formation.
-     *
-     * @param std::vector<int> formation The platoon formation.
-     */
-    UpdatePlatoonFormation* createUpdateFormationMsg(const std::vector<int>& formation);
-
-    /**
-     * Handles the reception of a LeaderAvailabilityRequest message.
-     *
-     * @param LeaderAvailabilityRequest msg The leader abandon intention message.
-     */
-    void handleLeaderAvailabilityRequest(const LeaderAvailabilityRequest* msg);
-
-    /**
-     * Handles the reception of a LeaderAvailabilityResponse message.
-     *
-     * @param LeaderAvailabilityResponse msg The leader abandon intention message.
-     */
-    void handleLeaderAvailabilityResponse(const LeaderAvailabilityResponse* msg);
-
-    /**
-     * Handles the reception of a LeaderAbandonIntention message.
-     *
-     * @param LeaderAbandonIntention msg The leader abandon intention message.
-     */
-    void handleLeaderAbandonIntention(const LeaderAbandonIntention* msg);
-
-    /**
-     * Handles the reception of a ReadyToBecomeLeader message.
-     *
-     * @param ReadyToBecomeLeader msg The ready-to-become leader message.
-     */
-    void handleReadyToBecomeLeader(const ReadyToBecomeLeader* msg);
-
-    /**
-     * Handles the reception of a UpdatePlatoonFormation message.
-     *
-     * @param UpdatePlatoonFormation msg The updated platoon formation message.
-     */
-    void handleUpdateFormation(const UpdatePlatoonFormation* msg);
-
-    /**
-     * Fills the ManeuverMessage with all the basic information.
-     *
-     * @param msg ManeuverMessage The message to be filled
-     * @param int vehicleId The id of the sending vehicle
-     * @param int platoonId The id of the platoon of the sending vehicle
-     * @param int destinationId The id of the destination
-     */
-    void fillManeuverMessage(ManeuverMessage* msg, int vehicleId, std::string externalId, int platoonId);
-
-    /**
-     * Sends a platoon leader election proposal to the current
-     * platoon leader.
-     */
-
-    void sendLeaderAvailabilityRequest();
-
-    void sendLeaderAvailabilityResponse();
-
-    // void sendLeaderAbandonIntention(); perché questa va in public invece che in private assieme alle altre?
-
-    void sendReadyToBecomeLeader();
-
-    /**
-     * Sends the updated platoon formation to all other platoon
-     * members.
-     *
-     * @param std::vector<int> formation The platoon formation.
-     */
-    void broadcastUpdateFormation(std::vector<int>& formation);
-
-    /** the role of this vehicle */
-    PlatoonRole role;
+    LeaderReplacement* leaderReplacementManeuver;
 };
 
 } // namespace plexe
