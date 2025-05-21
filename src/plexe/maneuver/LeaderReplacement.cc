@@ -5,6 +5,7 @@ namespace plexe {
 LeaderReplacement::LeaderReplacement(BasePlatooningApp* app)
     : BaseManeuver(app)
     , leaderReplacementState(LeaderReplacementState::IDLE)
+    , isCandidate(false)
 {
 }
 
@@ -44,27 +45,70 @@ void LeaderReplacement::onManeuverMessage(const ManeuverMessage* mm)
 
 void LeaderReplacement::handleLeaderAvailabilityRequest(const LeaderAvailabilityRequest* msg)
 {
-    // TODO
+    if (getPlatoonRole() != PlatoonRole::FOLLOWER) return;
+    if (msg->getPlatoonId() != positionHelper->getPlatoonId()) return;
+    if (msg->getDestinationId() != positionHelper->getId()) return;
+
+    isCandidate = true;
+    sendLeaderAvailabilityResponse();
 }
 
 void LeaderReplacement::handleLeaderAvailabilityResponse(const LeaderAvailabilityResponse* msg)
 {
-    // TODO
+    if (getPlatoonRole() != PlatoonRole::LEADER) return;
+    if (msg->getPlatoonId() != positionHelper->getPlatoonId()) return;
+    if (msg->getVehicleId() != positionHelper->getLeaderId()) return;
+
+    if (msg->getAvailable() == true){
+        leaderReplacementState = LeaderReplacementState::WAIT_AVAILABILITY_LEADER;
+        sendLeaderAbandonIntention();
+    }
 }
 
 void LeaderReplacement::handleLeaderAbandonIntention(const LeaderAbandonIntention* msg)
 {
-    // TODO
+    if (getPlatoonRole() != PlatoonRole::FOLLOWER) return;
+    if (msg->getPlatoonId() != positionHelper->getPlatoonId()) return;
+
+    leaderReplacementState = LeaderReplacementState::WAIT_FORMATION_UPDATE;
+
+    if (isCandidate == true){
+        sendReadyToBecomeLeader();
+    }
 }
 
 void LeaderReplacement::handleReadyToBecomeLeader(const ReadyToBecomeLeader* msg)
 {
-    // TODO
+    if (getPlatoonRole() != PlatoonRole::FOLLOWER) return;
+    if (msg->getPlatoonId() != positionHelper->getPlatoonId()) return;
+    if (msg->getVehicleId() != positionHelper->getLeaderId()) return;
+
+    broadcastUpdatePlatoonFormation();
+    leaderReplacementState = LeaderReplacementState::IDLE;
+    app->setPlatoonRole(PlatoonRole::NONE);
 }
 
 void LeaderReplacement::handleUpdatePlatoonFormation(const UpdatePlatoonFormation* msg)
 {
-    // TODO
+    if (getPlatoonRole() != PlatoonRole::FOLLOWER) return;
+    if (msg->getPlatoonId() != positionHelper->getPlatoonId()) return;
+    if (msg->getVehicleId() != positionHelper->getLeaderId()) return;
+
+    // update formation information
+    LOG << positionHelper->getId() << " changing platoon formation: ";
+    std::vector<int> f;
+    for (unsigned int i = 0; i < msg->getPlatoonFormationArraySize(); i++) {
+        f.push_back(msg->getPlatoonFormation(i));
+        LOG << msg->getPlatoonFormation(i) << " ";
+    }
+    LOG << "\n";
+    positionHelper->setPlatoonFormation(f);
+    leaderReplacementState = LeaderReplacementState::IDLE;
+
+    if (isCandidate == true){
+        app->setPlatoonRole(PlatoonRole::LEADER);
+        isCandidate = false;
+    }
 }
 
 void LeaderReplacement::sendLeaderAvailabilityRequest()

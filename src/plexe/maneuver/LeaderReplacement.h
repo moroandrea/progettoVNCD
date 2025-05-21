@@ -82,6 +82,9 @@ public:
 protected:
     enum class LeaderReplacementState {
         IDLE, ///< The maneuver did not start
+        WAIT_AVAILABILITY_LEADER,
+        WAIT_READY_TO_BECOME_LEADER,
+        WAIT_FORMATION_UPDATE,
     };
 
     /**
@@ -126,6 +129,8 @@ protected:
     void fillManeuverMessage(ManeuverMessage* msg, int vehicleId, std::string externalId, int platoonId);
 
     LeaderReplacementState leaderReplacementState;
+
+    bool isCandidate;
 
 private:
     /**
