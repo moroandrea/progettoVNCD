@@ -63,7 +63,7 @@ void SimplePlatooningApp::startLeaderReplacementManeuver()
 {
     ASSERT(getPlatoonRole() == PlatoonRole::LEADER);
 
-    leaderReplacementManeuver->startManeuver();
+    leaderReplacementManeuver->startManeuver(nullptr);
 }
 
 void SimplePlatooningApp::onManeuverMessage(ManeuverMessage* mm)

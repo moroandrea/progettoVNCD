@@ -1,4 +1,5 @@
 #include "plexe/maneuver/LeaderReplacement.h"
+#include "plexe/apps/BasePlatooningApp.h"
 
 namespace plexe {
 
@@ -6,69 +7,121 @@ LeaderReplacement::LeaderReplacement(BasePlatooningApp* app)
     : BaseManeuver(app)
     , leaderReplacementState(LeaderReplacementState::IDLE)
     , isCandidate(false)
+    , candidateId(-1)
 {
+}
+
+bool LeaderReplacement::initializeReplacementManeuver(const void* parameters)
+{
+    if (leaderReplacementState == LeaderReplacementState::IDLE) {
+        if (app->isInManeuver()) {
+            LOG << positionHelper->getId() << " cannot begin the maneuver because already involved in another one\n";
+            return false;
+        }
+
+        app->setInManeuver(true, this);
+
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 void LeaderReplacement::startManeuver(const void* parameters)
 {
-    // TODO
+    if (initializeReplacementManeuver(parameters)) {
+        // Send leader request to vehicle immediately behind
+        int destinationId = positionHelper->getMemberId(1);
+        sendLeaderAvailabilityRequest(destinationId);
+
+        candidateId = destinationId;
+        leaderReplacementState = LeaderReplacementState::WAIT_AVAILABILITY_LEADER;
+    }
 }
 
 void LeaderReplacement::abortManeuver()
 {
     leaderReplacementState = LeaderReplacementState::IDLE;
+    app->setInManeuver(false, nullptr);
 }
 
 void LeaderReplacement::onManeuverMessage(const ManeuverMessage* mm)
 {
+    std::ostringstream alertMsg;
+
+    // Common metadata
+    std::string sender = std::to_string(mm->getVehicleId());
+    std::string receiver = std::to_string(positionHelper->getId());  // Our own ID
+    std::string platoonId = std::to_string(mm->getPlatoonId());
+
     if (const LeaderAvailabilityRequest* msg = dynamic_cast<const LeaderAvailabilityRequest*>(mm)) {
-        getSimulation()->getActiveEnvir()->alert("E' arrivato un LeaderAvailabilityRequest!!!");
+        alertMsg << "[LeaderAvailabilityRequest] From: " << sender
+                 << ", To: " << receiver
+                 << ", Platoon: " << platoonId;
+        getSimulation()->getActiveEnvir()->alert(alertMsg.str().c_str());
         handleLeaderAvailabilityRequest(msg);
     }
     else if (const LeaderAvailabilityResponse* msg = dynamic_cast<const LeaderAvailabilityResponse*>(mm)) {
-        getSimulation()->getActiveEnvir()->alert("E' arrivato un LeaderAvailabilityResponse!!!");
+        alertMsg << "[LeaderAvailabilityResponse] From: " << sender
+                 << ", To: " << receiver
+                 << ", Platoon: " << platoonId;
+        getSimulation()->getActiveEnvir()->alert(alertMsg.str().c_str());
         handleLeaderAvailabilityResponse(msg);
     }
     else if (const LeaderAbandonIntention* msg = dynamic_cast<const LeaderAbandonIntention*>(mm)) {
-        getSimulation()->getActiveEnvir()->alert("E' arrivato un LeaderAbandonIntention!!!");
+        alertMsg << "[LeaderAbandonIntention] From: " << sender
+                 << ", To: " << receiver
+                 << ", Platoon: " << platoonId;
+        getSimulation()->getActiveEnvir()->alert(alertMsg.str().c_str());
         handleLeaderAbandonIntention(msg);
     }
     else if (const ReadyToBecomeLeader* msg = dynamic_cast<const ReadyToBecomeLeader*>(mm)) {
-        getSimulation()->getActiveEnvir()->alert("E' arrivato un ReadyToBecomeLeader!!!");
+        alertMsg << "[ReadyToBecomeLeader] From: " << sender
+                 << ", To: " << receiver
+                 << ", Platoon: " << platoonId;
+        getSimulation()->getActiveEnvir()->alert(alertMsg.str().c_str());
         handleReadyToBecomeLeader(msg);
     }
     else if (const UpdatePlatoonFormation* msg = dynamic_cast<const UpdatePlatoonFormation*>(mm)) {
-        getSimulation()->getActiveEnvir()->alert("E' arrivato un UpdatePlatoonFormation!!!");
+        alertMsg << "[UpdatePlatoonFormation] From: " << sender
+                 << ", To: " << receiver
+                 << ", Platoon: " << platoonId;
+        getSimulation()->getActiveEnvir()->alert(alertMsg.str().c_str());
         handleUpdatePlatoonFormation(msg);
     }
 }
 
 void LeaderReplacement::handleLeaderAvailabilityRequest(const LeaderAvailabilityRequest* msg)
 {
-    if (getPlatoonRole() != PlatoonRole::FOLLOWER) return;
+    if (app->getPlatoonRole() != PlatoonRole::FOLLOWER) return;
+    if (leaderReplacementState != LeaderReplacementState::IDLE) return;
     if (msg->getPlatoonId() != positionHelper->getPlatoonId()) return;
     if (msg->getDestinationId() != positionHelper->getId()) return;
 
+    // For simplicity, the candidate always accepts the request
     isCandidate = true;
-    sendLeaderAvailabilityResponse();
+    sendLeaderAvailabilityResponse(true);
 }
 
 void LeaderReplacement::handleLeaderAvailabilityResponse(const LeaderAvailabilityResponse* msg)
 {
-    if (getPlatoonRole() != PlatoonRole::LEADER) return;
+    if (app->getPlatoonRole() != PlatoonRole::LEADER) return;
+    if (leaderReplacementState != LeaderReplacementState::WAIT_AVAILABILITY_LEADER) return;
     if (msg->getPlatoonId() != positionHelper->getPlatoonId()) return;
-    if (msg->getVehicleId() != positionHelper->getLeaderId()) return;
+    if (msg->getVehicleId() != candidateId) return;
 
     if (msg->getAvailable() == true){
-        leaderReplacementState = LeaderReplacementState::WAIT_AVAILABILITY_LEADER;
         sendLeaderAbandonIntention();
+        leaderReplacementState = LeaderReplacementState::WAIT_READY_TO_BECOME_LEADER;
     }
 }
 
 void LeaderReplacement::handleLeaderAbandonIntention(const LeaderAbandonIntention* msg)
 {
-    if (getPlatoonRole() != PlatoonRole::FOLLOWER) return;
+    if (app->getPlatoonRole() != PlatoonRole::FOLLOWER) return;
     if (msg->getPlatoonId() != positionHelper->getPlatoonId()) return;
+    if (msg->getVehicleId() != positionHelper->getLeaderId()) return;
 
     leaderReplacementState = LeaderReplacementState::WAIT_FORMATION_UPDATE;
 
@@ -79,18 +132,32 @@ void LeaderReplacement::handleLeaderAbandonIntention(const LeaderAbandonIntentio
 
 void LeaderReplacement::handleReadyToBecomeLeader(const ReadyToBecomeLeader* msg)
 {
-    if (getPlatoonRole() != PlatoonRole::FOLLOWER) return;
+    if (app->getPlatoonRole() != PlatoonRole::LEADER) return;
+    if (leaderReplacementState != LeaderReplacementState::WAIT_READY_TO_BECOME_LEADER) return;
     if (msg->getPlatoonId() != positionHelper->getPlatoonId()) return;
-    if (msg->getVehicleId() != positionHelper->getLeaderId()) return;
+    if (msg->getVehicleId() != candidateId) return;
 
-    broadcastUpdatePlatoonFormation();
+    // Remove itself from the platoon, and send the updated information
+    std::vector<int> formation = positionHelper->getPlatoonFormation();
+    formation.erase(formation.begin());
+    broadcastUpdatePlatoonFormation(formation);
+
     leaderReplacementState = LeaderReplacementState::IDLE;
+    app->setInManeuver(false, nullptr);
+
+    // Update own platoon information
+    positionHelper->setPlatoonId(-1);
+    positionHelper->setPlatoonFormation(std::vector<int>());
     app->setPlatoonRole(PlatoonRole::NONE);
+
+    // Turn on ACC
+    plexeTraciVehicle->setActiveController(ACC);
+    plexeTraciVehicle->setACCHeadwayTime(1.2);
 }
 
 void LeaderReplacement::handleUpdatePlatoonFormation(const UpdatePlatoonFormation* msg)
 {
-    if (getPlatoonRole() != PlatoonRole::FOLLOWER) return;
+    if (app->getPlatoonRole() != PlatoonRole::FOLLOWER) return;
     if (msg->getPlatoonId() != positionHelper->getPlatoonId()) return;
     if (msg->getVehicleId() != positionHelper->getLeaderId()) return;
 
@@ -103,7 +170,9 @@ void LeaderReplacement::handleUpdatePlatoonFormation(const UpdatePlatoonFormatio
     }
     LOG << "\n";
     positionHelper->setPlatoonFormation(f);
+
     leaderReplacementState = LeaderReplacementState::IDLE;
+    app->setInManeuver(false, nullptr);
 
     if (isCandidate == true){
         app->setPlatoonRole(PlatoonRole::LEADER);
@@ -111,19 +180,19 @@ void LeaderReplacement::handleUpdatePlatoonFormation(const UpdatePlatoonFormatio
     }
 }
 
-void LeaderReplacement::sendLeaderAvailabilityRequest()
+void LeaderReplacement::sendLeaderAvailabilityRequest(int destinationId)
 {
     LeaderAvailabilityRequest* msg = createLeaderAvailabilityRequest();
-    int dest = positionHelper->getMemberId(1);
-    msg->setDestinationId(dest);
-    app->sendUnicast(msg, dest);
+    msg->setDestinationId(destinationId);
+    app->sendUnicast(msg, destinationId);
 }
 
-void LeaderReplacement::sendLeaderAvailabilityResponse()
+void LeaderReplacement::sendLeaderAvailabilityResponse(bool available)
 {
     LeaderAvailabilityResponse* msg = createLeaderAvailabilityResponse();
     int dest = positionHelper->getLeaderId();
     msg->setDestinationId(dest);
+    msg->setAvailable(available);
     app->sendUnicast(msg, dest);
 }
 

@@ -30,18 +30,48 @@ class SimpleScenario : public BaseScenario {
 public:
     virtual void initialize(int stage) override;
     virtual void handleMessage(cMessage* msg) override;
+
     SimpleScenario()
-            : leaderSpeed(0)
-            , app(nullptr){};
+        : leaderSpeed(0)
+        , app(nullptr)
+        , startManeuver(nullptr)
+        , watchRoleMsg(nullptr)
+        , lastRole(PlatoonRole::NONE)
+        , exitSpeed(0)
+        , exitLane(1)
+    {
+    }
 
 protected:
-    // leader average speed
+    // average leader cruising speed (m/s)
     double leaderSpeed;
-    // application layer, used to stop the simulation
+
+    // pointer to application layer
     SimplePlatooningApp* app;
 
 private:
-    cMessage* startWarningFollowers;
+    /** message to trigger the maneuver start */
+    cMessage* startManeuver;
+
+    /** periodic watcher to detect role change */
+    cMessage* watchRoleMsg;
+
+    /** message to trigger previous leader speedup */
+    cMessage* exitEvent;
+
+    /** previous platoon role */
+    PlatoonRole lastRole;
+
+    /** speed to adopt when exiting platoon */
+    double exitSpeed;
+
+    /** relative lane offset on exit (+1 = one lane right) */
+    int exitLane;
+
+    /** schedule next watch invocation */
+    void scheduleWatch(double delay);
+    /** check for LEADER->NONE transition */
+    void checkRole();
 };
 
 } // namespace plexe

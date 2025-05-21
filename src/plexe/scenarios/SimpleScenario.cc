@@ -19,6 +19,7 @@
 //
 
 #include "plexe/scenarios/SimpleScenario.h"
+#include "plexe/utilities/BasePositionHelper.h"
 
 using namespace veins;
 
@@ -28,30 +29,39 @@ Define_Module(SimpleScenario);
 
 void SimpleScenario::initialize(int stage)
 {
-
     BaseScenario::initialize(stage);
 
-    if (stage == 0)
-        // get pointer to application
+    if (stage == 0) {
+        // find application
         app = FindModule<SimplePlatooningApp*>::findSubModule(getParentModule());
+    }
 
     if (stage == 2) {
-        // average speed
         leaderSpeed = par("leaderSpeed").doubleValue() / 3.6;
+        exitSpeed   = par("exitSpeed").doubleValue() / 3.6;
+        exitLane    = par("exitLaneIndex").intValue();
+
+        // remember starting role
+        lastRole = PlatoonRole::NONE;
 
         if (positionHelper->isLeader()) {
-            // set base cruising speed
-            plexeTraciVehicle->setCruiseControlDesiredSpeed(positionHelper->getPlatoonSpeed());
+            lastRole = PlatoonRole::LEADER;
 
-            // Only the leader should start the protocol, initially it just warn his followers
-            startWarningFollowers = new cMessage("startWarningFollowers");
+            // setup start maneuver trigger and exit
+            startManeuver = new cMessage("startManeuver");
+            exitEvent = new cMessage("exitEvent");
 
-            double time = par("whenToWarnFollowers").doubleValue();
-            scheduleAt(time, startWarningFollowers);
+            // leader sets cruise speed and schedules start
+            plexeTraciVehicle->setCruiseControlDesiredSpeed(leaderSpeed);
+            double when = par("whenToStartManeuver").doubleValue();
+            scheduleAt(when, startManeuver);
+
+            // setup role watcher
+            watchRoleMsg = new cMessage("watchRole");
+            scheduleWatch(0.1);
         }
         else {
-            // let the follower set a higher desired speed to stay connected
-            // to the leader when it is accelerating
+            // followers speed up to maintain gap
             plexeTraciVehicle->setCruiseControlDesiredSpeed(leaderSpeed + 10);
         }
     }
@@ -59,9 +69,35 @@ void SimpleScenario::initialize(int stage)
 
 void SimpleScenario::handleMessage(cMessage* msg)
 {
-    if (msg == startWarningFollowers) {
+    if (msg == startManeuver) {
         app->startLeaderReplacementManeuver();
     }
+    else if (msg == watchRoleMsg) {
+        checkRole();
+        scheduleWatch(0.1);
+    }
+    else if (msg == exitEvent) {
+        EV << "SimpleScenario: now exiting platoon (delayed)\n";
+        plexeTraciVehicle->setCruiseControlDesiredSpeed(exitSpeed);
+        plexeTraciVehicle->changeLane(exitLane, 3.0);
+    }
+    else {
+        BaseScenario::handleSelfMsg(msg);
+    }
+}
+
+void SimpleScenario::scheduleWatch(double delay)
+{
+    scheduleAt(simTime() + delay, watchRoleMsg);
+}
+
+void SimpleScenario::checkRole()
+{
+    PlatoonRole current = app->getPlatoonRole();
+    if (lastRole == PlatoonRole::LEADER && current == PlatoonRole::NONE) {
+        scheduleAt(simTime() + 1.0, exitEvent);
+    }
+    lastRole = current;
 }
 
 } // namespace plexe

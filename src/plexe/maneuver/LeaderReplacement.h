@@ -88,16 +88,25 @@ protected:
     };
 
     /**
+     * Initializes the leader replacement maneuver, setting up useful data.
+     */
+    bool initializeReplacementManeuver(const void* parameters);
+
+    /**
      * Sends a message to a vehicle in the platoon, asking if it's available
      * to become the new platoon leader.
+     *
+     * @param destinationId ID of the requested vehicle
      */
-    void sendLeaderAvailabilityRequest();
+    void sendLeaderAvailabilityRequest(int destinationId);
 
     /**
      * Sends a message to the platoon leader, confirming or denying its availability
      * to become the new platoon leader.
+     *
+     * @param available whether the vehicle is willing to become leader
      */
-    void sendLeaderAvailabilityResponse();
+    void sendLeaderAvailabilityResponse(bool available);
 
     /**
      * Sends a message informing all vehicles that it's about to leave the platoon.
@@ -131,6 +140,8 @@ protected:
     LeaderReplacementState leaderReplacementState;
 
     bool isCandidate;
+
+    int candidateId;
 
 private:
     /**

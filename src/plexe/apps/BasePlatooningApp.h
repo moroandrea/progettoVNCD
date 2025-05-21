@@ -62,6 +62,29 @@ public:
      */
     virtual void sendUnicast(cPacket* msg, int destination);
 
+    /**
+     * Returns whether this car is in a maneuver
+     * @return bool true, if this car is in a maneuver, else false
+     */
+    bool isInManeuver() const
+    {
+        return inManeuver;
+    }
+
+    /**
+     * Set whether this car is in a maneuver
+     * @param bool b whether this car is in a maneuver
+     * @param maneuver the maneuver that is currently active
+     */
+    void setInManeuver(bool b, BaseManeuver* maneuver)
+    {
+        inManeuver = b;
+        if (inManeuver)
+            activeManeuver = maneuver;
+        else
+            activeManeuver = nullptr;
+    }
+
     BasePositionHelper* getPositionHelper()
     {
         return positionHelper;
