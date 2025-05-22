@@ -78,8 +78,9 @@ void SimpleScenario::handleMessage(cMessage* msg)
     }
     else if (msg == exitEvent) {
         EV << "SimpleScenario: now exiting platoon (delayed)\n";
+
         plexeTraciVehicle->setCruiseControlDesiredSpeed(exitSpeed);
-        plexeTraciVehicle->changeLane(exitLane, 3.0);
+        // plexeTraciVehicle->changeLane(exitLane, 3.0);
     }
     else {
         BaseScenario::handleSelfMsg(msg);

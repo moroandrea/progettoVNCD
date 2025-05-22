@@ -124,6 +124,7 @@ void LeaderReplacement::handleLeaderAbandonIntention(const LeaderAbandonIntentio
     if (msg->getVehicleId() != positionHelper->getLeaderId()) return;
 
     leaderReplacementState = LeaderReplacementState::WAIT_FORMATION_UPDATE;
+    app->setInManeuver(true, this);
 
     if (isCandidate == true){
         sendReadyToBecomeLeader();
@@ -220,8 +221,9 @@ void LeaderReplacement::broadcastUpdatePlatoonFormation(std::vector<int>& format
 {
     UpdatePlatoonFormation* msg = createUpdatePlatoonFormation(formation);
 
-    for (unsigned int i = 1; i < formation.size(); i++) {
-        int dest = formation[i];
+    std::vector<int> currentFormation = positionHelper->getPlatoonFormation();
+    for (unsigned int i = 1; i < currentFormation.size(); i++) {
+        int dest = currentFormation[i];
         UpdatePlatoonFormation* dup = msg->dup();
         dup->setDestinationId(dest);
         app->sendUnicast(dup, dest);
