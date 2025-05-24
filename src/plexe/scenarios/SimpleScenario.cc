@@ -38,8 +38,8 @@ void SimpleScenario::initialize(int stage)
 
     if (stage == 2) {
         leaderSpeed = par("leaderSpeed").doubleValue() / 3.6;
-        exitSpeed   = par("exitSpeed").doubleValue() / 3.6;
-        exitLane    = par("exitLaneIndex").intValue();
+        exitSpeed = par("exitSpeed").doubleValue() / 3.6;
+        exitLane = par("exitLaneIndex").intValue();
 
         // remember starting role
         lastRole = PlatoonRole::NONE;
@@ -77,10 +77,13 @@ void SimpleScenario::handleMessage(cMessage* msg)
         scheduleWatch(0.1);
     }
     else if (msg == exitEvent) {
-        EV << "SimpleScenario: now exiting platoon (delayed)\n";
+        std::ostringstream alertMsg;
+        alertMsg << "[Vehicle:" << positionHelper->getId() << " | Platoon: " << positionHelper->getPlatoonId()
+                 << "] Exited platoon, now accelerating and changing lane.";
+        getSimulation()->getActiveEnvir()->alert(alertMsg.str().c_str());
 
         plexeTraciVehicle->setCruiseControlDesiredSpeed(exitSpeed);
-        // plexeTraciVehicle->changeLane(exitLane, 3.0);
+        plexeTraciVehicle->changeLane(exitLane, 3.0);
     }
     else {
         BaseScenario::handleSelfMsg(msg);

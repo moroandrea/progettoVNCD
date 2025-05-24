@@ -52,7 +52,7 @@ void LeaderReplacement::onManeuverMessage(const ManeuverMessage* mm)
 
     // Common metadata
     std::string sender = std::to_string(mm->getVehicleId());
-    std::string receiver = std::to_string(positionHelper->getId());  // Our own ID
+    std::string receiver = std::to_string(positionHelper->getId()); // Our own ID
     std::string platoonId = std::to_string(mm->getPlatoonId());
 
     if (const LeaderAvailabilityRequest* msg = dynamic_cast<const LeaderAvailabilityRequest*>(mm)) {
@@ -111,7 +111,7 @@ void LeaderReplacement::handleLeaderAvailabilityResponse(const LeaderAvailabilit
     if (msg->getPlatoonId() != positionHelper->getPlatoonId()) return;
     if (msg->getVehicleId() != candidateId) return;
 
-    if (msg->getAvailable() == true){
+    if (msg->getAvailable() == true) {
         sendLeaderAbandonIntention();
         leaderReplacementState = LeaderReplacementState::WAIT_READY_TO_BECOME_LEADER;
     }
@@ -126,7 +126,7 @@ void LeaderReplacement::handleLeaderAbandonIntention(const LeaderAbandonIntentio
     leaderReplacementState = LeaderReplacementState::WAIT_FORMATION_UPDATE;
     app->setInManeuver(true, this);
 
-    if (isCandidate == true){
+    if (isCandidate == true) {
         sendReadyToBecomeLeader();
     }
 }
@@ -175,7 +175,7 @@ void LeaderReplacement::handleUpdatePlatoonFormation(const UpdatePlatoonFormatio
     leaderReplacementState = LeaderReplacementState::IDLE;
     app->setInManeuver(false, nullptr);
 
-    if (isCandidate == true){
+    if (isCandidate == true) {
         app->setPlatoonRole(PlatoonRole::LEADER);
         isCandidate = false;
     }

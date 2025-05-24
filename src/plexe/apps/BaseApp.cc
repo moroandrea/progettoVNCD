@@ -155,13 +155,35 @@ void BaseApp::handleSelfMsg(cMessage* msg)
 
 void BaseApp::onPlatoonBeacon(const PlatooningBeacon* pb)
 {
+    int selfId = positionHelper->getId();
+    int sender = pb->getVehicleId();
+    int leaderId = positionHelper->getLeaderId();
+    int platoonId = positionHelper->getPlatoonId();
+
     if (positionHelper->isInSamePlatoon(pb->getVehicleId())) {
+        bool fromMyLeader = positionHelper->isInSamePlatoon(sender)
+                                            && sender == leaderId;
+        EV << "[" << simTime() << "] Vehicle " << selfId
+               << " onPlatoonBeacon: received beacon from vehicle " << sender
+               << (fromMyLeader ? " (CURRENT LEADER)" : "")
+               << ", helper.reports leaderId=" << leaderId
+               << ", platoonId=" << platoonId
+               << "\n";
+
         // if the message comes from the leader
         if (pb->getVehicleId() == positionHelper->getLeaderId()) {
+            EV << "    Vehicle " << selfId
+                           << "  --> handling as LEADER beacon: speed=" << pb->getSpeed()
+                           << ", laneY=" << pb->getPositionY()
+                           << "\n";
             plexeTraciVehicle->setLeaderVehicleData(pb->getControllerAcceleration(), pb->getAcceleration(), pb->getSpeed(), pb->getPositionX(), pb->getPositionY(), pb->getTime());
         }
         // if the message comes from the vehicle in front
         if (pb->getVehicleId() == positionHelper->getFrontId()) {
+            EV << "    Vehicle " << selfId
+                           << "  --> handling as FRONT beacon: frontId="
+                           << positionHelper->getFrontId()
+                           << "\n";
             plexeTraciVehicle->setFrontVehicleData(pb->getControllerAcceleration(), pb->getAcceleration(), pb->getSpeed(), pb->getPositionX(), pb->getPositionY(), pb->getTime());
         }
         // send data about every vehicle to the CACC. this is needed by the consensus controller
@@ -180,6 +202,13 @@ void BaseApp::onPlatoonBeacon(const PlatooningBeacon* pb)
         // send information to CACC
         plexeTraciVehicle->setVehicleData(&vehicleData);
     }
+    else {
+        // optional: log that we're ignoring this beacon
+        EV << "    Vehicle " << selfId
+           << "  --> ignoring beacon from " << sender
+           << " (not in same platoon)\n";
+    }
+
     delete pb;
 }
 
