@@ -170,6 +170,19 @@ void LeaderReplacement::handleUpdatePlatoonFormation(const UpdatePlatoonFormatio
         LOG << msg->getPlatoonFormation(i) << " ";
     }
     LOG << "\n";
+    //Clear SUMO formation for resetting...
+    cModule *traffic = findModuleByPath("<root>.traffic");
+    std::string platooningVType = traffic->par("platooningVType");
+    std::stringstream ss;
+    std::vector<int> oldFormation = positionHelper->getPlatoonFormation();
+    for (int i = 0; i< oldFormation.size(); i++) {
+        int removeId = oldFormation[i];
+        ss.clear();
+        ss << platooningVType << "." << removeId;
+        positionHelper->getExternalId();
+        plexeTraciVehicle->removePlatoonMember(ss.str());
+    }
+
     positionHelper->setPlatoonFormation(f);
 
     leaderReplacementState = LeaderReplacementState::IDLE;

@@ -62,7 +62,7 @@ void SimpleScenario::initialize(int stage)
         }
         else {
             // followers speed up to maintain gap
-            plexeTraciVehicle->setCruiseControlDesiredSpeed(leaderSpeed + 10);
+            plexeTraciVehicle->setCruiseControlDesiredSpeed(leaderSpeed);
         }
     }
 }
