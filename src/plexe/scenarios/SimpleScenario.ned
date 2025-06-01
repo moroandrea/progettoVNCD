@@ -29,6 +29,6 @@ simple SimpleScenario extends BBaseScenario
         @class(plexe::SimpleScenario);
         
         double whenToStartManeuver @unit(s) = default(5s);      // Time when leader starts the maneuver
-        double exitSpeed @unit("kmph") = default(150kmph);        	// Speed to maintain during exit
+        double exitSpeed @unit("kmph") = default(110kmph);        	// Speed to maintain during exit
         int exitLaneIndex = default(1);                 		// Lane index for lane change
 }

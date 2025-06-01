@@ -146,9 +146,21 @@ void LeaderReplacement::handleReadyToBecomeLeader(const ReadyToBecomeLeader* msg
     leaderReplacementState = LeaderReplacementState::IDLE;
     app->setInManeuver(false, nullptr);
 
+    // Clear SUMO formation for resetting...
+    cModule* traffic = findModuleByPath("<root>.traffic");
+    std::string platooningVType = traffic->par("platooningVType");
+    std::vector<int> oldFormation = positionHelper->getPlatoonFormation();
+    for (int i = 1; i < oldFormation.size(); i++) {
+        std::stringstream ss;
+        ss << platooningVType << "." << oldFormation[i];
+        plexeTraciVehicle->removePlatoonMember(ss.str());
+    }
+
     // Update own platoon information
     positionHelper->setPlatoonId(-1);
-    positionHelper->setPlatoonFormation(std::vector<int>());
+    std::vector<int> selfOnly;
+    selfOnly.push_back(positionHelper->getId());
+    positionHelper->setPlatoonFormation(selfOnly);
     app->setPlatoonRole(PlatoonRole::NONE);
 
     // Turn on ACC
@@ -159,6 +171,7 @@ void LeaderReplacement::handleReadyToBecomeLeader(const ReadyToBecomeLeader* msg
 void LeaderReplacement::handleUpdatePlatoonFormation(const UpdatePlatoonFormation* msg)
 {
     if (app->getPlatoonRole() != PlatoonRole::FOLLOWER) return;
+    if (leaderReplacementState != LeaderReplacementState::WAIT_FORMATION_UPDATE) return;
     if (msg->getPlatoonId() != positionHelper->getPlatoonId()) return;
     if (msg->getVehicleId() != positionHelper->getLeaderId()) return;
 
@@ -170,20 +183,11 @@ void LeaderReplacement::handleUpdatePlatoonFormation(const UpdatePlatoonFormatio
         LOG << msg->getPlatoonFormation(i) << " ";
     }
     LOG << "\n";
-    //Clear SUMO formation for resetting...
-    cModule *traffic = findModuleByPath("<root>.traffic");
-    std::string platooningVType = traffic->par("platooningVType");
-    std::stringstream ss;
-    std::vector<int> oldFormation = positionHelper->getPlatoonFormation();
-    for (int i = 0; i< oldFormation.size(); i++) {
-        int removeId = oldFormation[i];
-        ss.clear();
-        ss << platooningVType << "." << removeId;
-        positionHelper->getExternalId();
-        plexeTraciVehicle->removePlatoonMember(ss.str());
-    }
 
+    // Update own platoon formation
     positionHelper->setPlatoonFormation(f);
+    positionHelper->setPlatoonSpeed(msg->getPlatoonSpeed());
+    positionHelper->setPlatoonLane(msg->getPlatoonLane());
 
     leaderReplacementState = LeaderReplacementState::IDLE;
     app->setInManeuver(false, nullptr);
@@ -191,6 +195,10 @@ void LeaderReplacement::handleUpdatePlatoonFormation(const UpdatePlatoonFormatio
     if (isCandidate == true) {
         app->setPlatoonRole(PlatoonRole::LEADER);
         isCandidate = false;
+
+        plexeTraciVehicle->setActiveController(ACC);
+        plexeTraciVehicle->setACCHeadwayTime(1.2);
+        plexeTraciVehicle->setCruiseControlDesiredSpeed(msg->getPlatoonSpeed());
     }
 }
 
@@ -220,6 +228,7 @@ void LeaderReplacement::sendLeaderAbandonIntention()
         dup->setDestinationId(dest);
         app->sendUnicast(dup, dest);
     }
+    delete msg;
 }
 
 void LeaderReplacement::sendReadyToBecomeLeader()
@@ -241,6 +250,7 @@ void LeaderReplacement::broadcastUpdatePlatoonFormation(std::vector<int>& format
         dup->setDestinationId(dest);
         app->sendUnicast(dup, dest);
     }
+    delete msg;
 }
 
 void LeaderReplacement::fillManeuverMessage(ManeuverMessage* msg, int vehicleId, std::string externalId, int platoonId)
