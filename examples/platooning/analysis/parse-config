@@ -14,11 +14,11 @@ prefix = sin
 merge = 1
 
 [config]
-config = Platooning
-out = Platooning
+config = Leaderchange
+out = Leaderchange
 map    = %(defaultMap)s
 mapFile = %(file)s
-prefix = plt
+prefix = ldc
 merge = 1
 type = csv
 

@@ -1,0 +1,6 @@
+d ./run -u Cmdenv -c LeaderchangeNoGui -r 0
+d ./run -u Cmdenv -c LeaderchangeNoGui -r 3
+d ./run -u Cmdenv -c LeaderchangeNoGui -r 2
+d ./run -u Cmdenv -c LeaderchangeNoGui -r 1
+d ./run -u Cmdenv -c LeaderchangeNoGui -r 4
+d ./run -u Cmdenv -c LeaderchangeNoGui -r 5
